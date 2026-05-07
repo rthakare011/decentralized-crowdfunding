@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { auth, db } from '../../firebase/config';
+import { db } from '../../firebase/config';
 import {
   collection,
   getDocs,
@@ -15,16 +15,6 @@ import {
 import toast from 'react-hot-toast';
 import { sendApprovalEmail, sendRejectionEmail } from '../../utils/emailService';
 
-const isAdmin = (email) => {
-  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  if (!ADMIN_EMAIL) {
-    console.error('NEXT_PUBLIC_ADMIN_EMAIL is not defined in environment variables');
-    toast.error('Admin email configuration missing');
-    return false;
-  }
-  return email === ADMIN_EMAIL;
-};
-
 const AdminCampaignManager = () => {
   const [user, setUser] = useState(null);
   const [campaigns, setCampaigns] = useState({
@@ -37,25 +27,14 @@ const AdminCampaignManager = () => {
   const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(
-      (u) => {
-        if (u && isAdmin(u.email)) {
-          setUser(u);
-        } else {
-          setUser(null);
-          setError('Unauthorized: Admins only');
-          toast.error('Unauthorized: Admins only');
-        }
-        setLoading(false);
-      },
-      (err) => {
-        console.error('Auth state change error:', err);
-        setError(`Authentication error: ${err.message}`);
-        setLoading(false);
-        toast.error(`Authentication error: ${err.message}`);
-      }
-    );
-    return () => unsubscribe();
+    const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+    if (isLoggedIn) {
+      setUser({ email: 'admin@mail.com' });
+    } else {
+      setError('Unauthorized: Admins only');
+      toast.error('Unauthorized: Admins only');
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {

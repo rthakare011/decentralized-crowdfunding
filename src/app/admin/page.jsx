@@ -1,17 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { auth } from '../../firebase/config';
-import {
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-} from 'firebase/auth';
 import toast from 'react-hot-toast';
 import { ShieldCheck, LogOut, Lock, Mail } from 'lucide-react';
 import AdminCampaignManager from './AdminCampaignManager';
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? '';
+const HARDCODED_ADMIN_EMAIL = 'admin@mail.com';
+const HARDCODED_ADMIN_PASSWORD = 'admin123';
 
 export default function AdminPage() {
   const [user, setUser] = useState(null);
@@ -22,42 +17,44 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser && firebaseUser.email === ADMIN_EMAIL) {
-        setUser(firebaseUser);
-        setShowLogin(false);
-      } else {
-        setUser(null);
-        setShowLogin(true);
-      }
-      setAuthChecked(true);
-    });
-    return () => unsub();
+    const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+    if (isLoggedIn) {
+      setUser({ email: HARDCODED_ADMIN_EMAIL });
+      setShowLogin(false);
+    } else {
+      setUser(null);
+      setShowLogin(true);
+    }
+    setAuthChecked(true);
   }, []);
 
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      if (result.user.email === ADMIN_EMAIL) {
-        setUser(result.user);
+      // Simulate slight network delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      
+      if (email === HARDCODED_ADMIN_EMAIL && password === HARDCODED_ADMIN_PASSWORD) {
+        setUser({ email: HARDCODED_ADMIN_EMAIL });
+        localStorage.setItem('isAdminLoggedIn', 'true');
         setShowLogin(false);
         toast.success('Logged in as admin.');
       } else {
-        await signOut(auth);
-        toast.error('Unauthorized account.');
+        toast.error('Invalid credentials.');
       }
     } catch (err) {
-      toast.error('Login failed. Check your credentials.');
+      toast.error('Login failed.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    localStorage.removeItem('isAdminLoggedIn');
     setUser(null);
     setShowLogin(true);
+    setEmail('');
+    setPassword('');
     toast.success('Logged out.');
   };
 
